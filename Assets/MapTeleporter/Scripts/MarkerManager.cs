@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class MarkerManager : MonoBehaviour
 {
@@ -10,8 +11,13 @@ public class MarkerManager : MonoBehaviour
 	public Renderer m_mapArea;
 	public GameObject m_mapMarkerPrefab;
 	public Vector3 m_offsetBy = Vector3.zero;
+	public Text m_name;
+	public Text m_area;
+	public Text m_coordinates;
 
+	[HideInInspector]
 	public Dictionary<int, Marker> m_worldMarkers;
+	[HideInInspector]
 	public Animator[] m_mapMarkers;
 
 	private bool m_isReady = false;
@@ -45,6 +51,7 @@ public class MarkerManager : MonoBehaviour
 
 		if (_currentNumber != _lastNumber) {
 			m_mapMarkers [_currentNumber].SetTrigger ("Select");
+			SetText (m_worldMarkers [_currentNumber]);
 			//Debug.Log ("selected " + m_mapMarkers [_currentNumber].name + ", " + _currentNumber.ToString () + ",last is " + _lastNumber.ToString ());
 			m_mapMarkers [_lastNumber].SetTrigger ("Deselect");
 			_lastNumber = _currentNumber;
@@ -56,8 +63,19 @@ public class MarkerManager : MonoBehaviour
 			SteamVR_Fade.View (Color.clear, 1);
 			m_player.transform.position = m_worldMarkers [_currentNumber].m_telePortTo.transform.position;
 		}
-
 			
+	}
+
+	void SetText (Marker m)
+	{
+		if (m_area != null)
+			m_area.text = "Area: " + m.m_mapArea;
+
+		if (m_name != null)
+			m_name.text = "Place: " + m.name;
+
+		if (m_coordinates != null)
+			m_coordinates.text = "x: " + m.m_telePortTo.transform.position.x + " y: " + m.m_telePortTo.transform.position.z + " elevation:" + m.m_telePortTo.transform.position.y;
 	}
 
 	void GetMarkersAndNormalizedPositions ()
@@ -104,7 +122,11 @@ public class MarkerManager : MonoBehaviour
 			float zPos = Mathf.Lerp (-m_mapArea.bounds.extents.z, m_mapArea.bounds.extents.z, m_worldMarkers [i].m_normalizedPosition.z);
 
 			GameObject go = Instantiate (m_mapMarkerPrefab, q.transform);
-			go.transform.localPosition = new Vector3 (xPos, yPos, zPos) + m_offsetBy;
+			go.transform.localPosition = new Vector3 (xPos, yPos, zPos);
+
+			//go.transform.LookAt (new Vector3 (0, 0, -.5f) + g.transform.position);
+
+			go.transform.localPosition += m_offsetBy;
 
 			m_mapMarkers [i] = go.GetComponentInChildren<Animator> () as Animator;
 		}
