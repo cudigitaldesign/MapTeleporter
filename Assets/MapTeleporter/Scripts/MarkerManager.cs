@@ -59,8 +59,8 @@ public class MarkerManager : MonoBehaviour
 
 		if (Input.GetButtonDown ("Fire1")) {
 
-			SteamVR_Fade.View (Color.black, 0);
-			SteamVR_Fade.View (Color.clear, 1);
+//			SteamVR_Fade.View (Color.black, 0);
+//			SteamVR_Fade.View (Color.clear, 1);
 			m_player.transform.position = m_worldMarkers [_currentNumber].m_telePortTo.transform.position;
 		}
 			
