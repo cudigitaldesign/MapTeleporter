@@ -32,22 +32,15 @@ public class Marker : MonoBehaviour
 		Twenty
 	}
 
-	public int m_id;
 	public id m_buildingId = id.Zero;
-	public MapArea m_mapArea = MapArea.Sapphire;
-	public Vector3 m_normalizedPosition;
-	public GameObject m_telePortTo;
+	public MapArea m_area = MapArea.Amber;
 	public bool m_isPortal = false;
 
-	public enum MapArea
-	{
-		Sapphire,
-		Emerald,
-		Ruby,
-		Amber
-	}
-
 	[HideInInspector]
+	public Vector3 m_normalizedPosition;
+	[HideInInspector]
+	public GameObject m_telePortTo;
+	//[HideInInspector]
 	public BuildingInfo m_info;
 
 	void Start ()
@@ -59,10 +52,11 @@ public class Marker : MonoBehaviour
 		DataReaderMap dataObj = FindObjectOfType<DataReaderMap> ();
 
 		if (dataObj == null) {
-			Debug.LogError ("No database found, killing myself now...");
-			Destroy (this);
+			Debug.LogError ("No database found, not going to import");
+			//Destroy (this);
+		} else {
+			m_info = dataObj.m_data [(int)m_buildingId];
 		}
-		m_info = dataObj.m_data [(int)m_buildingId];
 	}
 
 	public Marker GetMarker ()

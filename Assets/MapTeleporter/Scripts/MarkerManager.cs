@@ -5,77 +5,40 @@ using UnityEngine.UI;
 
 public class MarkerManager : MonoBehaviour
 {
+	//Static instance of GameManager which allows it to be accessed by any other script.
+	public static MarkerManager instance = null;
 
-	public GameObject m_player;
 	public Renderer m_worldArea;
 	public Renderer m_mapArea;
+	public MeshFilter m_curvedMap;
 	public GameObject m_mapMarkerPrefab;
 	public Vector3 m_offsetBy = Vector3.zero;
-	public Text m_name;
-	public Text m_area;
-	public Text m_coordinates;
 
 	[HideInInspector]
 	public Dictionary<int, Marker> m_worldMarkers;
 	[HideInInspector]
 	public Animator[] m_mapMarkers;
 
-	private bool m_isReady = false;
-	private int _currentNumber = 0;
-	private int _lastNumber = 0;
-	private float m_threshold = .1f;
+	public bool m_isReady { get; private set; }
+
+	void Awake ()
+	{
+		//Make sure this is in fact the only instance (Singleton pattern)
+		if (instance == null)
+			instance = this;
+		else if (instance != this)
+			Destroy (gameObject);    
+            
+		//Sets this to not be destroyed when reloading scene
+		DontDestroyOnLoad (gameObject);
+
+	}
 
 	void Start ()
 	{
 		GetMarkersAndNormalizedPositions ();
 		MakeAndPlaceMapMarkers ();
-	}
-
-	void Update ()
-	{
-
-		if (!m_isReady)
-			return;
-
-		float f = Input.GetAxisRaw ("Mouse ScrollWheel");
-		if (f > 0) {
-			_currentNumber++;
-			if (_currentNumber >= m_mapMarkers.Length)
-				_currentNumber = m_mapMarkers.Length - 1;
-		} else if (f < 0) {
-			_currentNumber--;
-			if (_currentNumber < 0) {
-				_currentNumber = 0;
-			}
-		}
-
-		if (_currentNumber != _lastNumber) {
-			m_mapMarkers [_currentNumber].SetTrigger ("Select");
-			SetText (m_worldMarkers [_currentNumber]);
-			//Debug.Log ("selected " + m_mapMarkers [_currentNumber].name + ", " + _currentNumber.ToString () + ",last is " + _lastNumber.ToString ());
-			m_mapMarkers [_lastNumber].SetTrigger ("Deselect");
-			_lastNumber = _currentNumber;
-		} 
-
-		if (Input.GetButtonDown ("Fire1")) {
-
-//			SteamVR_Fade.View (Color.black, 0);
-//			SteamVR_Fade.View (Color.clear, 1);
-			m_player.transform.position = m_worldMarkers [_currentNumber].m_telePortTo.transform.position;
-		}
-			
-	}
-
-	void SetText (Marker m)
-	{
-		if (m_area != null)
-			m_area.text = "Area: " + m.m_mapArea;
-
-		if (m_name != null)
-			m_name.text = "Place: " + m.name;
-
-		if (m_coordinates != null)
-			m_coordinates.text = "x: " + m.m_telePortTo.transform.position.x + " y: " + m.m_telePortTo.transform.position.z + " elevation:" + m.m_telePortTo.transform.position.y;
+		MakeLabels ();
 	}
 
 	void GetMarkersAndNormalizedPositions ()
@@ -85,7 +48,6 @@ public class MarkerManager : MonoBehaviour
 
 		for (int i = 0; i < temp.Length; i++) {
 			Marker m = temp [i];
-			m.m_id = i;
 			m.m_telePortTo = m.gameObject;
 			m.transform.name = "TelePorter_" + i.ToString ();
 
@@ -123,15 +85,71 @@ public class MarkerManager : MonoBehaviour
 
 			GameObject go = Instantiate (m_mapMarkerPrefab, q.transform);
 			go.transform.localPosition = new Vector3 (xPos, yPos, zPos);
-
-			//go.transform.LookAt (new Vector3 (0, 0, -.5f) + g.transform.position);
-
 			go.transform.localPosition += m_offsetBy;
 
 			m_mapMarkers [i] = go.GetComponentInChildren<Animator> () as Animator;
 		}
 
 		m_isReady = true;
+	}
+
+	void MakeLabels ()
+	{
+		if (m_curvedMap == null)
+			return;
+
+		for (int i = 0; i < m_worldMarkers.Count; i++) {
+			GameObject parent = new GameObject ("Labels");
+			GameObject g = GameObject.CreatePrimitive (PrimitiveType.Sphere);
+			g.transform.position = UvTo3D (new Vector2 (m_worldMarkers [i].m_normalizedPosition.x, m_worldMarkers [i].m_normalizedPosition.y), m_curvedMap);
+			g.transform.localScale = new Vector3 (.01f, .01f, .01f);
+			g.transform.SetParent (parent.transform);
+			parent.transform.position = m_curvedMap.transform.position;
+			parent.transform.rotation = m_curvedMap.transform.rotation;
+		}
+
+	}
+
+	Vector3 UvTo3D (Vector2 uv, MeshFilter meshFilter)
+	{
+
+		int[] tris = meshFilter.mesh.triangles;
+		Vector2[] uvs = meshFilter.mesh.uv;
+		Vector3[] verts = meshFilter.mesh.vertices;
+		for (int i = 0; i < tris.Length; i += 3) {
+			Vector2 u1 = uvs [tris [i]]; // get the triangle UVs
+			Vector2 u2 = uvs [tris [i + 1]];
+			Vector2 u3 = uvs [tris [i + 2]];
+			// calculate triangle area - if zero, skip it
+			float a = Area (u1, u2, u3);
+			if (a == 0)
+				continue;
+			// calculate barycentric coordinates of u1, u2 and u3
+			// if anyone is negative, point is outside the triangle: skip it
+			float a1 = Area (u2, u3, uv) / a;
+			if (a1 < 0)
+				continue;
+			float a2 = Area (u3, u1, uv) / a;
+			if (a2 < 0)
+				continue;
+			float a3 = Area (u1, u2, uv) / a;
+			if (a3 < 0)
+				continue;
+			// point inside the triangle - find mesh position by interpolation...
+			Vector3 p3D = a1 * verts [tris [i]] + a2 * verts [tris [i + 1]] + a3 * verts [tris [i + 2]];
+			// and return it in world coordinates:
+			return transform.TransformPoint (p3D);
+		}
+		// point outside any uv triangle: return Vector3.zero
+		return Vector3.zero;
+	}
+ 
+	// calculate signed triangle area using a kind of "2D cross product":
+	float Area (Vector2 p1, Vector2 p2, Vector2 p3)
+	{
+		Vector2 v1 = p1 - p3;
+		Vector2 v2 = p2 - p3;
+		return (v1.x * v2.y - v1.y * v2.x) / 2;
 	}
 }
 

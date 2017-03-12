@@ -17,6 +17,10 @@ public class DataReaderMap : MonoBehaviour
 	{
 		DictReader dictReader = new DictReader (resourceLocation);
 		m_data = new Dictionary<int, BuildingInfo> ();
+		BuildingInfo b = new BuildingInfo ();
+
+		m_data.Add (0, b);
+
 
 		foreach (var row in dictReader) {
 //			Debug.Log (row ["ID"] + ", " +
@@ -45,46 +49,7 @@ public class DataReaderMap : MonoBehaviour
 		}
 
 
-		Debug.Log (dictReader);
-	}
-
-	// Wrap text by line height
-	private string ResolveTextSize (string input, int lineLength)
-	{
-
-		// Split string by char " "         
-		string[] words = input.Split (" " [0]);
-
-		// Prepare result
-		string result = "";
-
-		// Temp line string
-		string line = "";
-
-		// for each all words        
-		foreach (string s in words) {
-			// Append current word into line
-			string temp = line + " " + s;
-
-			// If line length is bigger than lineLength
-			if (temp.Length > lineLength) {
-
-				// Append current line into result
-				result += line + "\n";
-				// Remain word append into new line
-				line = s;
-			}
-			// Append current word into current line
-			else {
-				line = temp;
-			}
-		}
-
-		// Append last line into result        
-		result += line;
-
-		// Remove first " " char
-		return result.Substring (1, result.Length - 1);
+//		Debug.Log (dictReader);
 	}
 }
 
