@@ -6,7 +6,7 @@ using UnityEngine.VR;
 //using Valve.VR;
 
 [RequireComponent (typeof(AudioSource))]
-public class SteamMapControls : MonoBehaviour
+public class MapInputHandler : MonoBehaviour
 {
 	public GameObject m_player;
 	public Animator m_map;
@@ -14,18 +14,21 @@ public class SteamMapControls : MonoBehaviour
 	public AudioClip m_clicked;
 	public AudioClip m_openMap;
 	public AudioClip m_closeMap;
-
 	public Block[] m_blocks;
 	public LabelMaker m_buildingLabel;
-
+	[Tooltip ("This is just to preview the effect. Use the native VR fade screen since those SDK's creates new cameras and such")]
+	public Animator m_previewFade;
+	public float m_fadeDelay = .1f;
 
 	public int _currentNumber { get; private set; }
 
 	public int _lastNumber  { get; private set; }
 
 	private Vector3 m_startPosition;
+	private Vector3 m_startRotation;
 	private AudioSource m_audioSource;
 	private bool m_isShowingMap = false;
+	private bool m_fadingUp = false;
 
 	//	SteamVR_Controller.Device device;
 	//	SteamVR_TrackedObject trackedobj;
@@ -42,6 +45,7 @@ public class SteamMapControls : MonoBehaviour
 //			}
 		m_audioSource = this.GetComponent<AudioSource> () as AudioSource;
 		m_startPosition = m_player.transform.position;
+		m_startRotation = m_player.transform.localEulerAngles;
 
 	}
 
@@ -78,18 +82,25 @@ public class SteamMapControls : MonoBehaviour
 			}
 		}
 
-		if (Input.GetButtonDown ("Fire1") && m_player != null) {
+		if (Input.GetKeyDown (KeyCode.G) && m_player != null) {
 
 //			SteamVR_Fade.View (Color.black, 0);
 //			SteamVR_Fade.View (Color.clear, 1);
-			m_player.transform.position = MarkerManager.instance.m_worldMarkers [_currentNumber].m_telePortTo.transform.position;
+
+			if (m_previewFade != null)
+				StartCoroutine (FadeAndMove (MarkerManager.instance.m_worldMarkers [_currentNumber].m_telePortTo.transform.position + Vector3.one, Vector3.zero));
+
+
+
 		}
 
-		if (Input.GetButtonDown ("Fire2") && m_player != null) {
+		if (Input.GetKeyDown (KeyCode.B) && m_player != null) {
 
 //			SteamVR_Fade.View (Color.black, 0);
 //			SteamVR_Fade.View (Color.clear, 1);
-			m_player.transform.position = m_startPosition;
+
+			if (m_previewFade != null)
+				StartCoroutine (FadeAndMove (m_startPosition, m_startRotation));
 		}
 
 
@@ -152,5 +163,24 @@ public class SteamMapControls : MonoBehaviour
 			m_buildingLabel.UpdateLabel (b);
 	}
 
+	IEnumerator FadeAndMove (Vector3 moveTo, Vector3 rotateTo)
+	{
+
+		m_previewFade.SetTrigger ("FadeToBlack");
+		yield return new WaitForSecondsRealtime (m_fadeDelay);//Need longer than a m_fadeDelay second fading animation for this to work.
+		m_player.transform.position = moveTo;
+		if (rotateTo == Vector3.zero)
+			m_player.transform.LookAt (m_startPosition);
+		else
+			m_player.transform.localEulerAngles = rotateTo;
+
+		FadeToClear ();
+		
+	}
+
+	void FadeToClear ()
+	{
+		m_previewFade.SetTrigger ("FadeToClear");
+	}
 
 }
