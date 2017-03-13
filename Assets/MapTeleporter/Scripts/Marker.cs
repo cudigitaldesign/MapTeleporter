@@ -49,13 +49,13 @@ public class Marker : MonoBehaviour
 		if (m_buildingId == id.Zero)
 			return;
 
-		DataReaderMap dataObj = FindObjectOfType<DataReaderMap> ();
+	
 
-		if (dataObj == null) {
+		if (DataReaderMap.instance == null) {
 			Debug.LogError ("No database found, not going to import");
-			//Destroy (this);
+			Destroy (this);
 		} else {
-			m_info = dataObj.m_data [(int)m_buildingId];
+			m_info = DataReaderMap.instance.m_data [(int)m_buildingId];
 		}
 	}
 

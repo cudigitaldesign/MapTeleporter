@@ -6,6 +6,8 @@ using VTL.IO;
 
 public class DataReaderMap : MonoBehaviour
 {
+
+	public static DataReaderMap instance = null;
 	// specify the location of your csv file relative to a Resources folder
 	// leave off the extension
 	public string resourceLocation = "data";
@@ -15,6 +17,17 @@ public class DataReaderMap : MonoBehaviour
 
 	void Awake ()
 	{
+
+
+		//Make sure this is in fact the only instance (Singleton pattern)
+		if (instance == null)
+			instance = this;
+		else if (instance != this)
+			Destroy (gameObject);    
+            
+		//Sets this to not be destroyed when reloading scene
+		DontDestroyOnLoad (gameObject);
+
 		DictReader dictReader = new DictReader (resourceLocation);
 		m_data = new Dictionary<int, BuildingInfo> ();
 		BuildingInfo b = new BuildingInfo ();
@@ -23,15 +36,6 @@ public class DataReaderMap : MonoBehaviour
 
 
 		foreach (var row in dictReader) {
-//			Debug.Log (row ["ID"] + ", " +
-//			row ["IMAGE"] + ", " +
-//			row ["ARCHITECT"] + ", " +
-//			row ["BUILDING"] + ", " +
-//			row ["HEX"] + ", " +
-//			row ["RGB"] + ", " +
-//			row ["QUOTE"] + ", " +
-//			row ["BLOCK"]
-//			);
 
 			BuildingInfo info = new BuildingInfo ();
 			info.m_image = row ["IMAGE"];

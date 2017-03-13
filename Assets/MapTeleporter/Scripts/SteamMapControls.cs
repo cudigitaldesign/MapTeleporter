@@ -151,4 +151,6 @@ public class SteamMapControls : MonoBehaviour
 		if (m_buildingLabel != null)
 			m_buildingLabel.UpdateLabel (b);
 	}
+
+
 }
