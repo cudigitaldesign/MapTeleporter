@@ -43,6 +43,7 @@ public class Marker : MonoBehaviour
 	//[HideInInspector]
 	public BuildingInfo m_info;
 
+
 	void Start ()
 	{
 		//If we are not a building, don't get any building data...
